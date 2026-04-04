@@ -1,0 +1,165 @@
+import { useState, useEffect } from 'react'
+import { usePush } from '../hooks/usePush.js'
+
+const MODEL_NAME = 'gpt-oss-120b'
+
+function formatDateLong(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00')
+  return d.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+}
+
+function DifficultyBadge({ difficulty }) {
+  const cls = {
+    Beginner: 'badge-beginner',
+    Intermediate: 'badge-intermediate',
+    Advanced: 'badge-advanced',
+  }[difficulty] || 'badge-intermediate'
+  return <span className={`badge ${cls}`}>{difficulty}</span>
+}
+
+function Section({ label, children }) {
+  return (
+    <div className="section">
+      <div className="section-label">{label}</div>
+      {children}
+    </div>
+  )
+}
+
+function SkeletonDetail() {
+  return (
+    <div className="topic-detail">
+      <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+        <div className="skeleton" style={{ width: 80, height: 22, borderRadius: 20 }} />
+        <div className="skeleton" style={{ width: 70, height: 22, borderRadius: 20 }} />
+        <div className="skeleton" style={{ width: 120, height: 22, borderRadius: 4 }} />
+      </div>
+      <div className="skeleton" style={{ height: 36, width: '80%', marginBottom: 8 }} />
+      <div className="skeleton" style={{ height: 36, width: '60%', marginBottom: 28 }} />
+      {[100, 90, 80, 95, 70].map((w, i) => (
+        <div key={i} className="skeleton" style={{ height: 16, width: `${w}%`, marginBottom: 10, maxWidth: `${w}%` }} />
+      ))}
+    </div>
+  )
+}
+
+function NotifyBanner() {
+  const { status, loading, subscribe } = usePush()
+  const [dismissed, setDismissed] = useState(() => localStorage.getItem('notifyDismissed') === '1')
+
+  if (dismissed || status === 'subscribed' || status === 'unsupported' || status === 'denied') return null
+
+  return (
+    <div className="notify-banner">
+      <div className="notify-banner-text">
+        <strong>Get notified at 9PM IST</strong> when a new topic drops.
+      </div>
+      <button className="btn btn-primary" onClick={subscribe} disabled={loading}>
+        {loading ? 'Enabling…' : 'Enable'}
+      </button>
+      <button
+        className="btn btn-ghost"
+        onClick={() => { localStorage.setItem('notifyDismissed', '1'); setDismissed(true) }}
+      >
+        Later
+      </button>
+    </div>
+  )
+}
+
+export default function TopicDetail({ topicId }) {
+  const [topic, setTopic] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    if (!topicId) { setTopic(null); return }
+    setLoading(true)
+    setError(null)
+    fetch(`/api/topics/${topicId}`)
+      .then((r) => { if (!r.ok) throw new Error('Topic not found'); return r.json() })
+      .then(setTopic)
+      .catch((e) => setError(e.message))
+      .finally(() => setLoading(false))
+  }, [topicId])
+
+  if (!topicId) {
+    return (
+      <div className="empty-state">
+        <h2>Daily Learning</h2>
+        <p>Select a topic from the sidebar, or wait for today's topic at 9PM IST.</p>
+      </div>
+    )
+  }
+
+  if (loading) return <SkeletonDetail />
+
+  if (error) {
+    return (
+      <div className="empty-state">
+        <h2>Couldn't load topic</h2>
+        <p>{error}</p>
+      </div>
+    )
+  }
+
+  if (!topic) return null
+
+  return (
+    <div className="topic-detail">
+      <NotifyBanner />
+
+      <div className="topic-meta">
+        <span className="badge badge-domain">{topic.domain}</span>
+        <DifficultyBadge difficulty={topic.difficulty} />
+        <span className="topic-date">{formatDateLong(topic.date)}</span>
+      </div>
+
+      <h1 className="topic-title">{topic.title}</h1>
+
+      <Section label="The Problem">
+        <div className="problem-box">
+          <p>{topic.problem_statement}</p>
+        </div>
+      </Section>
+
+      <Section label="Context">
+        <p className="prose">{topic.context_text}</p>
+      </Section>
+
+      <Section label="Deep Dive">
+        <p className="prose">{topic.deep_dive}</p>
+      </Section>
+
+      <Section label="Real-World Examples">
+        <p className="prose">{topic.real_world_examples}</p>
+      </Section>
+
+      <Section label="Solution Approaches">
+        <p className="prose">{topic.solution_approaches}</p>
+      </Section>
+
+      <Section label="Key Takeaways">
+        <ul className="takeaways-list">
+          {(topic.key_takeaways || []).map((t, i) => (
+            <li key={i}>{t}</li>
+          ))}
+        </ul>
+      </Section>
+
+      {topic.further_reading?.length > 0 && (
+        <Section label="Further Reading">
+          <ul className="reading-list">
+            {topic.further_reading.map((t, i) => (
+              <li key={i}>{t}</li>
+            ))}
+          </ul>
+        </Section>
+      )}
+
+      <div className="content-footer">
+        Generated by {MODEL_NAME}
+      </div>
+    </div>
+  )
+}
