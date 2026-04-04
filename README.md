@@ -129,41 +129,7 @@ All require `X-Admin-Key` header (if `ADMIN_KEY` is set).
 
 ## Deploying to Cloud Run
 
-### Prerequisites
-
-- Google Cloud project with billing enabled
-- `gcloud` CLI installed and authenticated
-- Cloud Run and Cloud Build APIs enabled — no Artifact Registry setup needed
-
-### Deploy
-
-No Artifact Registry setup needed. `gcloud run deploy --source` handles the build and image storage automatically via Cloud Build.
-
-```bash
-gcloud builds submit --config cloudbuild.yaml \
-  --project=my-stuff-ai \
-  --substitutions \
-    "_GROQ_API_KEY=gsk_xxx,\
-    _SMTP_USER=you@gmail.com,\
-    _SMTP_PASSWORD=xxxx xxxx xxxx xxxx,\
-    _EMAIL_TO=you@gmail.com,\
-    _VAPID_PRIVATE_KEY=abc...,\
-    _VAPID_PUBLIC_KEY=xyz...,\
-    _ADMIN_KEY=your-secret-key"
-```
-
-Or set the substitution variables as **Cloud Build trigger variables** in the console to avoid passing them every time.
-
-### Scheduler note
-
-`cloudbuild.yaml` sets `--min-instances=1` so APScheduler stays alive. To run at zero cost instead, create a **Cloud Scheduler** job:
-
-```
-Schedule:  30 15 * * *   (15:30 UTC = 9PM IST)
-URL:       https://daily-learning-taxnvq53va-uc.a.run.app/api/admin/trigger
-Method:    POST
-Header:    X-Admin-Key: your-secret-key
-```
+See [DEPLOYMENT.md](DEPLOYMENT.md).
 
 ---
 
