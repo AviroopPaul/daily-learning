@@ -4,7 +4,7 @@ steps:
     args:
       - 'build'
       - '-t'
-      - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/${_SERVICE}:${SHORT_SHA}'
+      - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/${_SERVICE}:${_TAG}'
       - '-t'
       - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/${_SERVICE}:latest'
       - '.'
@@ -23,7 +23,7 @@ steps:
       - 'run'
       - 'deploy'
       - '${_SERVICE}'
-      - '--image=${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/${_SERVICE}:${SHORT_SHA}'
+      - '--image=${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/${_SERVICE}:${_TAG}'
       - '--region=${_REGION}'
       - '--platform=managed'
       - '--allow-unauthenticated'
@@ -38,14 +38,15 @@ steps:
 
 substitutions:
   _REGION: us-central1
-  _REPO: sysdesign-daily
-  _SERVICE: sysdesign-daily
+  _REPO: daily-learning
+  _SERVICE: daily-learning
+  _TAG: latest
   _GROQ_MODEL: gpt-oss-120b
   _SMTP_PORT: '587'
-  _SERVICE_DOMAIN: sysdesign-daily-xxxxxxxxxx-uc.a.run.app
+  _SERVICE_DOMAIN: daily-learning-taxnvq53va-uc.a.run.app
 
 images:
-  - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/${_SERVICE}:${SHORT_SHA}'
+  - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/${_SERVICE}:${_TAG}'
   - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/${_SERVICE}:latest'
 
 options:
