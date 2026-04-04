@@ -5,6 +5,16 @@ Single-container app: React SPA + FastAPI backend + SQLite. Generates one system
 
 ---
 
+## Deployment
+
+**Live URL**: https://daily-learning-taxnvq53va-uc.a.run.app
+**GCP project**: `my-stuff-ai`, region `us-central1`
+**Service name**: `daily-learning`
+
+**How to redeploy**: `gcloud builds submit --config cloudbuild.yaml --project=my-stuff-ai --substitutions="_GROQ_API_KEY=...,..."`. No Artifact Registry setup needed — `cloudbuild.yaml` uses `gcloud run deploy --source` which lets Cloud Build handle image storage automatically in a managed `cloud-run-source-deploy` repo.
+
+---
+
 ## Architecture decisions worth knowing
 
 **Single process, no queue**: APScheduler runs inside the FastAPI process (not Celery). Fires at 15:30 UTC (= 9PM IST). Cloud Run must have `--min-instances=1` or the scheduler dies on scale-to-zero. `/api/admin/trigger` exists as a Cloud Scheduler HTTP fallback.
