@@ -21,6 +21,13 @@ class Topic(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 
+class SubjectArea(Base):
+    __tablename__ = "subject_areas"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(200), unique=True, nullable=False)
+
+
 class PushSubscription(Base):
     __tablename__ = "push_subscriptions"
 

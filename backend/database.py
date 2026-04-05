@@ -34,6 +34,42 @@ def get_db():
         db.close()
 
 
+DEFAULT_SUBJECT_AREAS = [
+    "Databases",
+    "Distributed Systems",
+    "Caching",
+    "System Design Fundamentals",
+    "Networking",
+    "Security",
+    "API Design",
+    "Message Queues",
+    "Observability & Monitoring",
+    "Load Balancing",
+    "Storage Systems",
+    "Consensus & Coordination",
+    "Rate Limiting",
+    "Authentication & Authorization",
+    "Search Systems",
+    "Stream Processing",
+    "Data Pipelines",
+    "Container Orchestration",
+    "Service Discovery",
+    "Edge Computing & CDN",
+    "LLM Infrastructure",
+    "CI/CD & DevOps",
+]
+
+
 def init_db():
-    from backend.models import Topic, PushSubscription  # noqa: F401
+    from backend.models import Topic, PushSubscription, SubjectArea  # noqa: F401
     Base.metadata.create_all(bind=engine)
+
+    # Seed default subject areas on first run
+    db = SessionLocal()
+    try:
+        if db.query(SubjectArea).count() == 0:
+            for name in DEFAULT_SUBJECT_AREAS:
+                db.add(SubjectArea(name=name))
+            db.commit()
+    finally:
+        db.close()

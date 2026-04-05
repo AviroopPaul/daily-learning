@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { FiCalendar } from 'react-icons/fi'
 import { usePush } from '../hooks/usePush.js'
 
 const MODEL_NAME = 'gpt-oss-120b'
@@ -110,9 +111,12 @@ export default function TopicDetail({ topicId }) {
       <NotifyBanner />
 
       <div className="topic-meta">
+        <span className="topic-date">
+          <FiCalendar size={13} />
+          {formatDateLong(topic.date)}
+        </span>
         <span className="badge badge-domain">{topic.domain}</span>
         <DifficultyBadge difficulty={topic.difficulty} />
-        <span className="topic-date">{formatDateLong(topic.date)}</span>
       </div>
 
       <h1 className="topic-title">{topic.title}</h1>
