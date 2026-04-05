@@ -7,7 +7,6 @@ from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.database import init_db
-from backend.scheduler import start_scheduler, stop_scheduler
 from backend.routers import topics, subscriptions, admin
 
 logging.basicConfig(
@@ -21,18 +20,10 @@ STATIC_DIR = os.path.join(os.path.dirname(__file__), "..", "frontend", "dist")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup
     os.makedirs("data", exist_ok=True)
     init_db()
     logger.info("Database initialized")
-
-    start_scheduler()
-
     yield
-
-    # Shutdown
-    stop_scheduler()
-    logger.info("Scheduler stopped")
 
 
 app = FastAPI(
