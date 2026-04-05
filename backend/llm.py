@@ -7,6 +7,27 @@ logger = logging.getLogger(__name__)
 
 GROQ_MODEL = os.getenv("GROQ_MODEL", "gpt-oss-120b")
 
+# Runtime config — overrides defaults without redeployment
+_runtime_config: dict = {
+    "model": None,
+    "system_prompt": None,
+    "topic_prompt_template": None,
+}
+
+
+def get_llm_config() -> dict:
+    return {
+        "model": _runtime_config["model"] or GROQ_MODEL,
+        "system_prompt": _runtime_config["system_prompt"] or SYSTEM_PROMPT,
+        "topic_prompt_template": _runtime_config["topic_prompt_template"] or TOPIC_PROMPT_TEMPLATE,
+    }
+
+
+def update_llm_config(data: dict) -> None:
+    for key in ("model", "system_prompt", "topic_prompt_template"):
+        if key in data:
+            _runtime_config[key] = data[key] or None  # empty string resets to default
+
 TOPIC_SCHEMA = {
     "type": "object",
     "properties": {
@@ -16,11 +37,7 @@ TOPIC_SCHEMA = {
         },
         "domain": {
             "type": "string",
-            "enum": [
-                "Backend", "Frontend", "LLM Training", "LLM at Scale",
-                "Deployment", "SCM", "Database", "Networking", "Security",
-                "Observability", "Caching", "Distributed Systems", "Message Queues", "API Design"
-            ]
+            "enum": [],  # populated dynamically from subject areas at generation time
         },
         "difficulty": {
             "type": "string",
@@ -74,30 +91,42 @@ TOPIC_PROMPT_TEMPLATE = """Generate a comprehensive system design educational to
 Previously covered topics (DO NOT repeat these):
 {previous_topics}
 
+Preferred subject areas (pick one that hasn't been covered recently):
+{subject_areas}
+
 Focus on real challenges that companies like Netflix, Google, OpenAI, Anthropic, Meta, Uber, and Airbnb have faced and solved.
 Choose a unique topic not in the list above. Be specific and insightful — avoid generic overviews."""
 
 
-def generate_topic(date: str, previous_topics: list[str]) -> dict:
+def generate_topic(date: str, previous_topics: list[str], model: str = None, subject_areas: list[str] = None) -> dict:
     api_key = os.getenv("GROQ_API_KEY")
     if not api_key:
         raise ValueError("GROQ_API_KEY environment variable not set")
 
     client = Groq(api_key=api_key)
+    cfg = get_llm_config()
+    effective_model = model or cfg["model"]
 
     previous_str = "\n".join(f"- {t}" for t in previous_topics) if previous_topics else "None yet — this is the first topic!"
+    subject_str = "\n".join(f"- {s}" for s in subject_areas) if subject_areas else "- All topics welcome"
 
-    prompt = TOPIC_PROMPT_TEMPLATE.format(
+    prompt = cfg["topic_prompt_template"].format(
         date=date,
         previous_topics=previous_str,
+        subject_areas=subject_str,
     )
 
-    logger.info(f"Generating topic for {date} using model {GROQ_MODEL}")
+    # Build schema with domain enum from current subject areas
+    schema = json.loads(json.dumps(TOPIC_SCHEMA))  # deep copy
+    domains = subject_areas if subject_areas else ["General"]
+    schema["properties"]["domain"]["enum"] = domains
+
+    logger.info(f"Generating topic for {date} using model {effective_model}, domains={domains}")
 
     response = client.chat.completions.create(
-        model=GROQ_MODEL,
+        model=effective_model,
         messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "system", "content": cfg["system_prompt"]},
             {"role": "user", "content": prompt},
         ],
         temperature=0.8,
@@ -107,7 +136,7 @@ def generate_topic(date: str, previous_topics: list[str]) -> dict:
             "json_schema": {
                 "name": "daily_topic",
                 "strict": True,
-                "schema": TOPIC_SCHEMA,
+                "schema": schema,
             },
         },
     )
