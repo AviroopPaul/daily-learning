@@ -112,6 +112,56 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
   gap: 4px;
 }
 
+/* ─── Font size controls ─── */
+.font-size-controls {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-right: 4px;
+}
+
+.font-size-btn {
+  width: 30px;
+}
+
+.font-size-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.font-size-a {
+  font-family: var(--font-serif);
+  font-weight: 700;
+  color: var(--text-muted);
+  line-height: 1;
+}
+
+.font-size-a--sm { font-size: 11px; }
+.font-size-a--lg { font-size: 15px; }
+
+/* ─── Font size scale overrides ─── */
+[data-font-size="sm"] .prose,
+[data-font-size="sm"] .problem-box p {
+  font-size: 13px;
+}
+[data-font-size="sm"] .takeaways-list li {
+  font-size: 12px;
+}
+[data-font-size="sm"] .topic-title {
+  font-size: clamp(18px, 3.5vw, 24px);
+}
+
+[data-font-size="lg"] .prose,
+[data-font-size="lg"] .problem-box p {
+  font-size: 17px;
+}
+[data-font-size="lg"] .takeaways-list li {
+  font-size: 16px;
+}
+[data-font-size="lg"] .topic-title {
+  font-size: clamp(26px, 4.5vw, 36px);
+}
+
 .icon-btn {
   width: 34px;
   height: 34px;

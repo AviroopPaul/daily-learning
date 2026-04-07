@@ -29,7 +29,7 @@ function TypewriterLogo() {
   )
 }
 
-export default function Header({ theme, onToggleTheme, onToggleSidebar, sidebarOpen }) {
+export default function Header({ theme, onToggleTheme, onToggleSidebar, sidebarOpen, fontSize, onIncreaseFontSize, onDecreaseFontSize }) {
   const { status, loading, subscribe, unsubscribe } = usePush()
 
   const handleBell = () => {
@@ -53,6 +53,27 @@ export default function Header({ theme, onToggleTheme, onToggleSidebar, sidebarO
       <div className="header-spacer" />
 
       <div className="header-actions">
+        <div className="font-size-controls">
+          <button
+            className="icon-btn font-size-btn"
+            onClick={onDecreaseFontSize}
+            disabled={fontSize === 'sm'}
+            title="Decrease font size"
+            aria-label="Decrease font size"
+          >
+            <span className="font-size-a font-size-a--sm">A</span>
+          </button>
+          <button
+            className="icon-btn font-size-btn"
+            onClick={onIncreaseFontSize}
+            disabled={fontSize === 'lg'}
+            title="Increase font size"
+            aria-label="Increase font size"
+          >
+            <span className="font-size-a font-size-a--lg">A</span>
+          </button>
+        </div>
+
         {status !== 'unsupported' && (
           <button
             className={`icon-btn ${status === 'subscribed' ? 'active' : ''}`}
