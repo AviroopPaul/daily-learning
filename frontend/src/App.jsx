@@ -4,6 +4,29 @@ import Sidebar from './components/Sidebar.jsx'
 import TopicDetail from './components/TopicDetail.jsx'
 import AdminPanel from './components/AdminPanel.jsx'
 
+const FONT_SIZES = ['sm', 'md', 'lg']
+
+function useFontSize() {
+  const [fontSize, setFontSize] = useState(() => {
+    return localStorage.getItem('fontSize') || 'md'
+  })
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-font-size', fontSize)
+    localStorage.setItem('fontSize', fontSize)
+  }, [fontSize])
+
+  const increase = () => setFontSize((f) => {
+    const i = FONT_SIZES.indexOf(f)
+    return FONT_SIZES[Math.min(i + 1, FONT_SIZES.length - 1)]
+  })
+  const decrease = () => setFontSize((f) => {
+    const i = FONT_SIZES.indexOf(f)
+    return FONT_SIZES[Math.max(i - 1, 0)]
+  })
+  return { fontSize, increase, decrease }
+}
+
 function useTheme() {
   const [theme, setTheme] = useState(() => {
     return localStorage.getItem('theme') || 'dark'
@@ -23,6 +46,7 @@ function useTheme() {
 
 function MainApp() {
   const { theme, toggle: toggleTheme } = useTheme()
+  const { fontSize, increase: increaseFontSize, decrease: decreaseFontSize } = useFontSize()
   const [topics, setTopics] = useState([])
   const [selectedId, setSelectedId] = useState(null)
   const [sidebarOpen, setSidebarOpen] = useState(true)
@@ -78,6 +102,9 @@ function MainApp() {
         onToggleTheme={toggleTheme}
         onToggleSidebar={() => setSidebarOpen((o) => !o)}
         sidebarOpen={sidebarOpen}
+        fontSize={fontSize}
+        onIncreaseFontSize={increaseFontSize}
+        onDecreaseFontSize={decreaseFontSize}
       />
 
       <div className="app-body">
