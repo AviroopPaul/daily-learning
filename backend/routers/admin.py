@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from backend.database import get_db
 from backend.models import Topic, PushSubscription, SubjectArea
 from backend.schemas import GenerateResponse, TopicListItem
-from backend.llm import generate_topic, get_llm_config, update_llm_config
+from backend.llm import generate_topic, get_llm_config, update_llm_config, compute_target_difficulty, DIFFICULTY_LEVELS
 from backend.email_service import send_topic_email
 from backend.push_service import send_push_notification
 import os
@@ -29,6 +29,7 @@ class ConfigRequest(BaseModel):
     model: Optional[str] = None
     system_prompt: Optional[str] = None
     topic_prompt_template: Optional[str] = None
+    difficulty_mode: Optional[str] = None  # "auto" | "Beginner" | "Intermediate" | "Advanced"
 
 
 class SubjectAreaCreate(BaseModel):
@@ -58,9 +59,19 @@ async def run_daily_generation(model: str = None) -> dict:
             logger.info(f"Topic already exists for {today}, skipping")
             return {"skipped": True, "topic_id": existing.id}
 
-        previous_titles = [t.title for t in db.query(Topic.title).all()]
+        all_topics = db.query(Topic).order_by(Topic.date.desc()).all()
+        previous_titles = [t.title for t in all_topics]
         subject_areas = [s.name for s in db.query(SubjectArea).order_by(SubjectArea.name).all()]
-        topic_data = generate_topic(today, previous_titles, model=model, subject_areas=subject_areas)
+
+        cfg = get_llm_config()
+        difficulty_mode = cfg.get("difficulty_mode", "auto")
+        if difficulty_mode in DIFFICULTY_LEVELS:
+            target_difficulty = difficulty_mode
+        else:
+            recent_difficulties = [t.difficulty for t in all_topics[:9]]
+            target_difficulty = compute_target_difficulty(recent_difficulties)
+
+        topic_data = generate_topic(today, previous_titles, model=model, subject_areas=subject_areas, target_difficulty=target_difficulty)
 
         new_topic = Topic(
             date=today,

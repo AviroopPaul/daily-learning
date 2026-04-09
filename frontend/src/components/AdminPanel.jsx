@@ -21,7 +21,7 @@ export default function AdminPanel() {
 
   const [stats, setStats] = useState(null)
   const [topics, setTopics] = useState([])
-  const [config, setConfig] = useState({ model: '', system_prompt: '', topic_prompt_template: '' })
+  const [config, setConfig] = useState({ model: '', system_prompt: '', topic_prompt_template: '', difficulty_mode: 'auto' })
   const [models, setModels] = useState([])
 
   const [subjectAreas, setSubjectAreas] = useState([])
@@ -469,6 +469,20 @@ export default function AdminPanel() {
                 />
               </div>
               <div className="admin-field">
+                <label className="admin-label">Difficulty Mode</label>
+                <select
+                  className="admin-select"
+                  value={config.difficulty_mode}
+                  onChange={(e) => setConfig((c) => ({ ...c, difficulty_mode: e.target.value }))}
+                >
+                  <option value="auto">Auto (rotate evenly)</option>
+                  <option value="Beginner">Beginner</option>
+                  <option value="Intermediate">Intermediate</option>
+                  <option value="Advanced">Advanced</option>
+                </select>
+                <div className="admin-hint">Auto picks the least-represented difficulty from the last 9 topics to keep distribution even.</div>
+              </div>
+              <div className="admin-field">
                 <label className="admin-label">Topic Prompt Template</label>
                 <textarea
                   className="admin-textarea"
@@ -477,7 +491,7 @@ export default function AdminPanel() {
                   rows={9}
                   spellCheck={false}
                 />
-                <div className="admin-hint">Available variables: <code>&#123;date&#125;</code>, <code>&#123;previous_topics&#125;</code></div>
+                <div className="admin-hint">Available variables: <code>&#123;date&#125;</code>, <code>&#123;previous_topics&#125;</code>, <code>&#123;subject_areas&#125;</code>, <code>&#123;target_difficulty&#125;</code></div>
               </div>
               <div className="admin-actions">
                 <button className="btn btn-primary" onClick={handleSaveConfig} disabled={savingConfig}>
