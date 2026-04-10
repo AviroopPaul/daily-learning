@@ -12,7 +12,10 @@ _runtime_config: dict = {
     "model": None,
     "system_prompt": None,
     "topic_prompt_template": None,
+    "difficulty_mode": None,  # None/"auto" | "Beginner" | "Intermediate" | "Advanced"
 }
+
+DIFFICULTY_LEVELS = ["Beginner", "Intermediate", "Advanced"]
 
 
 def get_llm_config() -> dict:
@@ -20,13 +23,24 @@ def get_llm_config() -> dict:
         "model": _runtime_config["model"] or GROQ_MODEL,
         "system_prompt": _runtime_config["system_prompt"] or SYSTEM_PROMPT,
         "topic_prompt_template": _runtime_config["topic_prompt_template"] or TOPIC_PROMPT_TEMPLATE,
+        "difficulty_mode": _runtime_config["difficulty_mode"] or "auto",
     }
 
 
 def update_llm_config(data: dict) -> None:
-    for key in ("model", "system_prompt", "topic_prompt_template"):
+    for key in ("model", "system_prompt", "topic_prompt_template", "difficulty_mode"):
         if key in data:
             _runtime_config[key] = data[key] or None  # empty string resets to default
+
+
+def compute_target_difficulty(recent_difficulties: list[str]) -> str:
+    """Pick the difficulty level least represented in recent topics."""
+    counts = {d: 0 for d in DIFFICULTY_LEVELS}
+    for d in recent_difficulties:
+        if d in counts:
+            counts[d] += 1
+    # Pick the one with the lowest count; break ties in Beginner → Intermediate → Advanced order
+    return min(DIFFICULTY_LEVELS, key=lambda d: counts[d])
 
 TOPIC_SCHEMA = {
     "type": "object",
@@ -41,7 +55,7 @@ TOPIC_SCHEMA = {
         },
         "difficulty": {
             "type": "string",
-            "enum": ["Beginner", "Intermediate", "Advanced"]
+            "enum": DIFFICULTY_LEVELS
         },
         "problem_statement": {
             "type": "string",
@@ -94,11 +108,14 @@ Previously covered topics (DO NOT repeat these):
 Preferred subject areas (pick one that hasn't been covered recently):
 {subject_areas}
 
+Target difficulty: {target_difficulty}
+The topic MUST be set at the {target_difficulty} level. Calibrate depth, jargon, and assumed prior knowledge accordingly.
+
 Focus on real challenges that companies like Netflix, Google, OpenAI, Anthropic, Meta, Uber, and Airbnb have faced and solved.
 Choose a unique topic not in the list above. Be specific and insightful — avoid generic overviews."""
 
 
-def generate_topic(date: str, previous_topics: list[str], model: str = None, subject_areas: list[str] = None) -> dict:
+def generate_topic(date: str, previous_topics: list[str], model: str = None, subject_areas: list[str] = None, target_difficulty: str = None) -> dict:
     api_key = os.getenv("GROQ_API_KEY")
     if not api_key:
         raise ValueError("GROQ_API_KEY environment variable not set")
@@ -109,11 +126,13 @@ def generate_topic(date: str, previous_topics: list[str], model: str = None, sub
 
     previous_str = "\n".join(f"- {t}" for t in previous_topics) if previous_topics else "None yet — this is the first topic!"
     subject_str = "\n".join(f"- {s}" for s in subject_areas) if subject_areas else "- All topics welcome"
+    effective_difficulty = target_difficulty or "Intermediate"
 
     prompt = cfg["topic_prompt_template"].format(
         date=date,
         previous_topics=previous_str,
         subject_areas=subject_str,
+        target_difficulty=effective_difficulty,
     )
 
     # Build schema with domain enum from current subject areas
