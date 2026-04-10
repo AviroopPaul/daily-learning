@@ -11,7 +11,14 @@ Single-container app: React SPA + FastAPI backend + SQLite. Generates one system
 **GCP project**: `my-stuff-ai`, region `us-central1`
 **Service name**: `daily-learning`
 
-**How to redeploy**: `gcloud builds submit --config cloudbuild.yaml --project=my-stuff-ai --substitutions="_GROQ_API_KEY=...,..."`. No Artifact Registry setup needed — `cloudbuild.yaml` uses `gcloud run deploy --source` which lets Cloud Build handle image storage automatically in a managed `cloud-run-source-deploy` repo.
+**How to redeploy**: All secrets live in `.env`. Build the substitution string from it and run:
+
+```
+gcloud builds submit --config cloudbuild.yaml --project=my-stuff-ai \
+  --substitutions="_GROQ_API_KEY=...,_GROQ_MODEL=...,_SMTP_HOST=...,_SMTP_PORT=...,_SMTP_USER=...,_SMTP_PASSWORD=...,_EMAIL_TO=...,_VAPID_PRIVATE_KEY=...,_VAPID_PUBLIC_KEY=...,_ADMIN_KEY=..."
+```
+
+`_GROQ_MODEL` and `_SMTP_PORT` have defaults in `cloudbuild.yaml` and can be omitted if unchanged. No Artifact Registry setup needed — `cloudbuild.yaml` uses `gcloud run deploy --source` which lets Cloud Build handle image storage automatically in a managed `cloud-run-source-deploy` repo.
 
 ---
 
