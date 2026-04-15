@@ -282,7 +282,8 @@ async def trigger_force(
 async def backfill_tldr(db: Session = Depends(get_db), x_admin_key: str = Header(None)):
     """Generate and save tldr for every topic that doesn't have one yet."""
     verify_admin(x_admin_key)
-    topics = db.query(Topic).filter(Topic.tldr == None).order_by(Topic.date).all()  # noqa: E711
+    from sqlalchemy import or_
+    topics = db.query(Topic).filter(or_(Topic.tldr == None, Topic.tldr == "")).order_by(Topic.date).all()  # noqa: E711
     updated, failed = 0, []
     for topic in topics:
         try:
