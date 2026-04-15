@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from backend.database import get_db
 from backend.models import Topic, PushSubscription, SubjectArea
 from backend.schemas import GenerateResponse, TopicListItem
-from backend.llm import generate_topic, get_llm_config, update_llm_config, compute_target_difficulty, DIFFICULTY_LEVELS
+from backend.llm import generate_topic, generate_tldr, get_llm_config, update_llm_config, compute_target_difficulty, DIFFICULTY_LEVELS
 from backend.email_service import send_topic_email
 from backend.push_service import send_push_notification
 import os
@@ -76,6 +76,7 @@ async def run_daily_generation(model: str = None) -> dict:
         new_topic = Topic(
             date=today,
             title=topic_data["title"],
+            tldr=topic_data.get("tldr"),
             domain=topic_data["domain"],
             difficulty=topic_data["difficulty"],
             problem_statement=topic_data["problem_statement"],
@@ -273,6 +274,28 @@ async def trigger_force(
     except Exception as e:
         logger.error(f"Force generation failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ── TL;DR backfill ────────────────────────────────────────────────────────
+
+@router.post("/backfill-tldr")
+async def backfill_tldr(db: Session = Depends(get_db), x_admin_key: str = Header(None)):
+    """Generate and save tldr for every topic that doesn't have one yet."""
+    verify_admin(x_admin_key)
+    topics = db.query(Topic).filter(Topic.tldr == None).order_by(Topic.date).all()  # noqa: E711
+    updated, failed = 0, []
+    for topic in topics:
+        try:
+            tldr = generate_tldr(topic.title, topic.problem_statement, topic.solution_approaches)
+            topic.tldr = tldr
+            db.commit()
+            updated += 1
+            logger.info(f"Backfilled tldr for topic {topic.id} ({topic.title})")
+        except Exception as e:
+            db.rollback()
+            logger.error(f"Failed to generate tldr for topic {topic.id}: {e}")
+            failed.append({"id": topic.id, "title": topic.title, "error": str(e)})
+    return {"updated": updated, "failed": failed, "total": len(topics)}
 
 
 # ── Push management ────────────────────────────────────────────────────────

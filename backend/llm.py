@@ -119,6 +119,37 @@ Focus on real challenges that companies like Netflix, Google, OpenAI, Anthropic,
 Choose a unique topic not in the list above. Be specific and insightful — avoid generic overviews."""
 
 
+def generate_tldr(title: str, problem_statement: str, solution_approaches: str, model: str = None) -> str:
+    api_key = os.getenv("GROQ_API_KEY")
+    if not api_key:
+        raise ValueError("GROQ_API_KEY environment variable not set")
+
+    client = Groq(api_key=api_key)
+    cfg = get_llm_config()
+    effective_model = model or cfg["model"]
+
+    prompt = (
+        f"Topic: {title}\n\n"
+        f"Problem: {problem_statement}\n\n"
+        f"Solution approaches: {solution_approaches}\n\n"
+        "Write a TL;DR for this system design topic in 3-5 sentences of plain prose (no markdown, no bullet points): "
+        "(1) one sentence on the core problem, "
+        "(2) the best solution approach and why it wins in 1-2 sentences, "
+        "(3) 2-3 alternative approaches each in one sentence."
+    )
+
+    response = client.chat.completions.create(
+        model=effective_model,
+        messages=[
+            {"role": "system", "content": cfg["system_prompt"]},
+            {"role": "user", "content": prompt},
+        ],
+        temperature=0.5,
+        max_tokens=300,
+    )
+    return response.choices[0].message.content.strip()
+
+
 def generate_topic(date: str, previous_topics: list[str], model: str = None, subject_areas: list[str] = None, target_difficulty: str = None) -> dict:
     api_key = os.getenv("GROQ_API_KEY")
     if not api_key:
