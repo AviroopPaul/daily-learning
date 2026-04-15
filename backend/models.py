@@ -11,6 +11,7 @@ class Topic(Base):
     title = Column(String(255), nullable=False)
     domain = Column(String(100), nullable=False)
     difficulty = Column(String(50), nullable=False, default="Intermediate")
+    tldr = Column(Text, nullable=True)
     problem_statement = Column(Text, nullable=False)
     context_text = Column(Text, nullable=False)
     deep_dive = Column(Text, nullable=False)

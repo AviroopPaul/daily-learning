@@ -49,6 +49,10 @@ TOPIC_SCHEMA = {
             "type": "string",
             "description": "Concise, descriptive title e.g. 'Write-Ahead Logging for Crash Recovery'"
         },
+        "tldr": {
+            "type": "string",
+            "description": "A 3-5 sentence plain-prose overview: (1) one sentence on the core problem, (2) the best solution approach and why it wins in 1-2 sentences, (3) 2-3 alternative approaches each in one sentence. No markdown, no bullet points."
+        },
         "domain": {
             "type": "string",
             "enum": [],  # populated dynamically from subject areas at generation time
@@ -89,7 +93,7 @@ TOPIC_SCHEMA = {
         }
     },
     "required": [
-        "title", "domain", "difficulty", "problem_statement", "context_text",
+        "title", "tldr", "domain", "difficulty", "problem_statement", "context_text",
         "deep_dive", "real_world_examples", "solution_approaches",
         "key_takeaways", "further_reading"
     ],
