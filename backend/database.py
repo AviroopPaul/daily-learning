@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
 from sqlalchemy.pool import StaticPool
 import os
@@ -63,6 +63,14 @@ DEFAULT_SUBJECT_AREAS = [
 def init_db():
     from backend.models import Topic, PushSubscription, SubjectArea  # noqa: F401
     Base.metadata.create_all(bind=engine)
+
+    # Add new columns that didn't exist in older schema versions
+    with engine.connect() as conn:
+        try:
+            conn.execute(text("ALTER TABLE topics ADD COLUMN tldr TEXT"))
+            conn.commit()
+        except Exception:
+            pass  # column already exists
 
     # Seed default subject areas on first run
     db = SessionLocal()
