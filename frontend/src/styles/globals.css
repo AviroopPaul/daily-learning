@@ -141,7 +141,8 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 
 /* ─── Font size scale overrides ─── */
 [data-font-size="sm"] .prose,
-[data-font-size="sm"] .problem-box p {
+[data-font-size="sm"] .problem-box p,
+[data-font-size="sm"] .tldr-text {
   font-size: 13px;
 }
 [data-font-size="sm"] .takeaways-list li {
@@ -152,7 +153,8 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 }
 
 [data-font-size="lg"] .prose,
-[data-font-size="lg"] .problem-box p {
+[data-font-size="lg"] .problem-box p,
+[data-font-size="lg"] .tldr-text {
   font-size: 17px;
 }
 [data-font-size="lg"] .takeaways-list li {
@@ -423,6 +425,28 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
   border-radius: 1px;
   flex-shrink: 0;
   opacity: 0.7;
+}
+
+.tldr-box {
+  background: var(--accent-bg);
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  border-radius: var(--radius);
+  padding: 14px 18px;
+  margin: 20px 0 0;
+}
+.tldr-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+.tldr-text {
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.75;
+  margin: 0;
 }
 
 .problem-box {

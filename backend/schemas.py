@@ -8,6 +8,7 @@ class TopicBase(BaseModel):
     title: str
     domain: str
     difficulty: str
+    tldr: Optional[str] = None
     problem_statement: str
     context_text: str
     deep_dive: str

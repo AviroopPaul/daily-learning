@@ -121,6 +121,13 @@ export default function TopicDetail({ topicId }) {
 
       <h1 className="topic-title">{topic.title}</h1>
 
+      {topic.tldr && (
+        <div className="tldr-box">
+          <div className="tldr-label">TL;DR</div>
+          <p className="tldr-text">{topic.tldr}</p>
+        </div>
+      )}
+
       <Section label="The Problem">
         <div className="problem-box">
           <p>{topic.problem_statement}</p>
