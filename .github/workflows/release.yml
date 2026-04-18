@@ -1,0 +1,72 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Get version from manifest
+        id: version
+        run: |
+          VERSION=$(jq -r '.version' chrome-extension/manifest.json)
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Check if tag already exists
+        id: tag_check
+        run: |
+          if git ls-remote --tags origin "refs/tags/v${{ steps.version.outputs.version }}" | grep -q .; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Zip Chrome extension
+        if: steps.tag_check.outputs.exists == 'false'
+        run: |
+          cd chrome-extension
+          zip -r ../daily-learning-quiz-guard-v${{ steps.version.outputs.version }}.zip . \
+            --exclude "*.DS_Store" --exclude "__MACOSX/*"
+
+      - name: Create Release
+        if: steps.tag_check.outputs.exists == 'false'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: "v${{ steps.version.outputs.version }} — Quiz Guard Extension"
+          body: |
+            ## Daily Learning Quiz Guard — Chrome Extension
+
+            ### Install
+            1. Download `daily-learning-quiz-guard-v${{ steps.version.outputs.version }}.zip` below
+            2. Unzip it
+            3. Open Chrome → `chrome://extensions`
+            4. Enable **Developer mode** (top right toggle)
+            5. Click **Load unpacked** → select the unzipped folder
+            6. Pin the extension from the toolbar
+
+            ### What's included
+            - YouTube blocker until today's quiz is submitted
+            - Daily nudge notifications (9AM, 12PM, 6PM)
+            - Popup showing quiz status and current streak
+
+            ### Permissions used
+            - `storage` — persist quiz completion state
+            - `notifications` — daily nudge alerts
+            - `alarms` — schedule the nudges
+            - `tabs` — open the app when a notification is clicked
+          files: daily-learning-quiz-guard-v${{ steps.version.outputs.version }}.zip
+          draft: false
+          prerelease: false

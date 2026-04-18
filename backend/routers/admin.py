@@ -8,9 +8,9 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from backend.database import get_db
-from backend.models import Topic, PushSubscription, SubjectArea
+from backend.models import Topic, PushSubscription, SubjectArea, Quiz, QuizQuestion
 from backend.schemas import GenerateResponse, TopicListItem
-from backend.llm import generate_topic, generate_tldr, get_llm_config, update_llm_config, compute_target_difficulty, DIFFICULTY_LEVELS
+from backend.llm import generate_topic, generate_tldr, generate_quiz, get_llm_config, update_llm_config, compute_target_difficulty, DIFFICULTY_LEVELS
 from backend.email_service import send_topic_email
 from backend.push_service import send_push_notification
 import os
@@ -92,6 +92,32 @@ async def run_daily_generation(model: str = None) -> dict:
         db.refresh(new_topic)
 
         logger.info(f"Topic saved: '{new_topic.title}' (ID: {new_topic.id})")
+
+        # Generate quiz for the new topic (non-fatal if it fails)
+        try:
+            quiz_questions = generate_quiz(
+                new_topic.title, new_topic.problem_statement, new_topic.deep_dive
+            )
+            quiz = Quiz(topic_id=new_topic.id)
+            db.add(quiz)
+            db.flush()
+            for i, q in enumerate(quiz_questions, start=1):
+                db.add(QuizQuestion(
+                    quiz_id=quiz.id,
+                    order=i,
+                    question=q["question"],
+                    option_a=q["option_a"],
+                    option_b=q["option_b"],
+                    option_c=q["option_c"],
+                    option_d=q["option_d"],
+                    correct=q["correct"],
+                    explanation=q["explanation"],
+                ))
+            db.commit()
+            logger.info(f"Quiz generated for topic {new_topic.id}")
+        except Exception as qe:
+            db.rollback()
+            logger.error(f"Quiz generation failed for topic {new_topic.id}: {qe}")
 
         subscriptions = db.query(PushSubscription).all()
         push_success = 0
@@ -341,6 +367,84 @@ def cleanup_subscriptions(db: Session = Depends(get_db), x_admin_key: str = Head
         db.query(PushSubscription).filter(PushSubscription.id == sid).delete()
     db.commit()
     return {"success": True, "removed": len(stale_ids), "remaining": len(subscriptions) - len(stale_ids)}
+
+
+# ── Quiz management ────────────────────────────────────────────────────────
+
+@router.post("/quiz/generate/{topic_id}")
+async def generate_quiz_for_topic(topic_id: int, db: Session = Depends(get_db), x_admin_key: str = Header(None)):
+    """Generate (or regenerate) quiz for a specific topic."""
+    verify_admin(x_admin_key)
+    topic = db.query(Topic).filter(Topic.id == topic_id).first()
+    if not topic:
+        raise HTTPException(status_code=404, detail="Topic not found")
+
+    # Delete existing quiz if any
+    existing_quiz = db.query(Quiz).filter(Quiz.topic_id == topic_id).first()
+    if existing_quiz:
+        db.query(QuizQuestion).filter(QuizQuestion.quiz_id == existing_quiz.id).delete()
+        db.delete(existing_quiz)
+        db.commit()
+
+    try:
+        quiz_questions = generate_quiz(topic.title, topic.problem_statement, topic.deep_dive)
+        quiz = Quiz(topic_id=topic_id)
+        db.add(quiz)
+        db.flush()
+        for i, q in enumerate(quiz_questions, start=1):
+            db.add(QuizQuestion(
+                quiz_id=quiz.id,
+                order=i,
+                question=q["question"],
+                option_a=q["option_a"],
+                option_b=q["option_b"],
+                option_c=q["option_c"],
+                option_d=q["option_d"],
+                correct=q["correct"],
+                explanation=q["explanation"],
+            ))
+        db.commit()
+        return {"success": True, "quiz_id": quiz.id, "questions": len(quiz_questions)}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/quiz/backfill")
+async def backfill_quizzes(db: Session = Depends(get_db), x_admin_key: str = Header(None)):
+    """Generate quizzes for all topics that don't have one yet."""
+    verify_admin(x_admin_key)
+    topics_with_quiz = {q.topic_id for q in db.query(Quiz).all()}
+    topics_without = db.query(Topic).filter(Topic.id.notin_(topics_with_quiz)).order_by(Topic.date).all()
+
+    generated, failed = 0, []
+    for topic in topics_without:
+        try:
+            quiz_questions = generate_quiz(topic.title, topic.problem_statement, topic.deep_dive)
+            quiz = Quiz(topic_id=topic.id)
+            db.add(quiz)
+            db.flush()
+            for i, q in enumerate(quiz_questions, start=1):
+                db.add(QuizQuestion(
+                    quiz_id=quiz.id,
+                    order=i,
+                    question=q["question"],
+                    option_a=q["option_a"],
+                    option_b=q["option_b"],
+                    option_c=q["option_c"],
+                    option_d=q["option_d"],
+                    correct=q["correct"],
+                    explanation=q["explanation"],
+                ))
+            db.commit()
+            generated += 1
+            logger.info(f"Backfilled quiz for topic {topic.id} ({topic.title})")
+        except Exception as e:
+            db.rollback()
+            logger.error(f"Failed to generate quiz for topic {topic.id}: {e}")
+            failed.append({"id": topic.id, "title": topic.title, "error": str(e)})
+
+    return {"generated": generated, "failed": failed, "total": len(topics_without)}
 
 
 # ── VAPID ──────────────────────────────────────────────────────────────────

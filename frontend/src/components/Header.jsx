@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { FiSun, FiMoon, FiBell, FiBellOff, FiSidebar } from 'react-icons/fi'
 import { usePush } from '../hooks/usePush.js'
+import StreakWidget from './StreakWidget.jsx'
 
 const LOGO_TEXT = 'daily_learning'
 
@@ -53,6 +54,8 @@ export default function Header({ theme, onToggleTheme, onToggleSidebar, sidebarO
       <div className="header-spacer" />
 
       <div className="header-actions">
+        <StreakWidget />
+
         <div className="font-size-controls">
           <button
             className="icon-btn font-size-btn"
@@ -66,7 +69,7 @@ export default function Header({ theme, onToggleTheme, onToggleSidebar, sidebarO
           <button
             className="icon-btn font-size-btn"
             onClick={onIncreaseFontSize}
-            disabled={fontSize === 'lg'}
+            disabled={fontSize === 'xl'}
             title="Increase font size"
             aria-label="Increase font size"
           >

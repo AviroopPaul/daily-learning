@@ -201,3 +201,84 @@ def generate_topic(date: str, previous_topics: list[str], model: str = None, sub
     # With strict mode this will always be valid — parse and return
     data = json.loads(content)
     return data
+
+
+QUIZ_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "questions": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "question": {"type": "string", "description": "The MCQ question text"},
+                    "option_a": {"type": "string"},
+                    "option_b": {"type": "string"},
+                    "option_c": {"type": "string"},
+                    "option_d": {"type": "string"},
+                    "correct": {
+                        "type": "string",
+                        "enum": ["a", "b", "c", "d"],
+                        "description": "The letter of the correct option"
+                    },
+                    "explanation": {
+                        "type": "string",
+                        "description": "1-2 sentence explanation of why the correct answer is right"
+                    }
+                },
+                "required": ["question", "option_a", "option_b", "option_c", "option_d", "correct", "explanation"],
+                "additionalProperties": False
+            }
+        }
+    },
+    "required": ["questions"],
+    "additionalProperties": False
+}
+
+
+def generate_quiz(topic_title: str, problem_statement: str, deep_dive: str, model: str = None) -> list[dict]:
+    """Generate 5 MCQ quiz questions for a topic using strict structured output."""
+    api_key = os.getenv("GROQ_API_KEY")
+    if not api_key:
+        raise ValueError("GROQ_API_KEY environment variable not set")
+
+    client = Groq(api_key=api_key)
+    cfg = get_llm_config()
+    effective_model = model or cfg["model"]
+
+    prompt = (
+        f"Generate exactly 5 multiple-choice quiz questions to test understanding of the following system design topic.\n\n"
+        f"Topic: {topic_title}\n\n"
+        f"Problem: {problem_statement}\n\n"
+        f"Technical content: {deep_dive}\n\n"
+        "Requirements:\n"
+        "- Questions should test conceptual understanding, trade-offs, and real-world application\n"
+        "- Each question must have exactly 4 options (A, B, C, D) with only one correct answer\n"
+        "- Options should be plausible — avoid obviously wrong distractors\n"
+        "- Include a brief explanation for why the correct answer is right\n"
+        "- Vary difficulty across the 5 questions"
+    )
+
+    logger.info(f"Generating quiz for '{topic_title}' using model {effective_model}")
+
+    response = client.chat.completions.create(
+        model=effective_model,
+        messages=[
+            {"role": "system", "content": cfg["system_prompt"]},
+            {"role": "user", "content": prompt},
+        ],
+        temperature=0.7,
+        max_tokens=2048,
+        response_format={
+            "type": "json_schema",
+            "json_schema": {
+                "name": "quiz_questions",
+                "strict": True,
+                "schema": QUIZ_SCHEMA,
+            },
+        },
+    )
+
+    content = response.choices[0].message.content
+    data = json.loads(content)
+    return data["questions"]

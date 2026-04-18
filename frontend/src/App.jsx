@@ -4,7 +4,7 @@ import Sidebar from './components/Sidebar.jsx'
 import TopicDetail from './components/TopicDetail.jsx'
 import AdminPanel from './components/AdminPanel.jsx'
 
-const FONT_SIZES = ['sm', 'md', 'lg']
+const FONT_SIZES = ['sm', 'md', 'lg', 'xl']
 
 function useFontSize() {
   const [fontSize, setFontSize] = useState(() => {

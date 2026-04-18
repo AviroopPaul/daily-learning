@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, Text, JSON
+from sqlalchemy import Column, Integer, String, DateTime, Text, JSON, ForeignKey
 from sqlalchemy.sql import func
 from backend.database import Base
 
@@ -37,3 +37,38 @@ class PushSubscription(Base):
     p256dh = Column(Text, nullable=False)
     auth = Column(Text, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class Quiz(Base):
+    __tablename__ = "quizzes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    topic_id = Column(Integer, ForeignKey("topics.id"), unique=True, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class QuizQuestion(Base):
+    __tablename__ = "quiz_questions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    quiz_id = Column(Integer, ForeignKey("quizzes.id"), nullable=False)
+    order = Column(Integer, nullable=False)        # 1–5
+    question = Column(Text, nullable=False)
+    option_a = Column(Text, nullable=False)
+    option_b = Column(Text, nullable=False)
+    option_c = Column(Text, nullable=False)
+    option_d = Column(Text, nullable=False)
+    correct = Column(String(1), nullable=False)    # "a"|"b"|"c"|"d"
+    explanation = Column(Text, nullable=False)
+
+
+class QuizSubmission(Base):
+    __tablename__ = "quiz_submissions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    device_id = Column(String(64), index=True, nullable=False)  # UUID from browser localStorage
+    quiz_id = Column(Integer, ForeignKey("quizzes.id"), nullable=False)
+    topic_id = Column(Integer, ForeignKey("topics.id"), nullable=False)
+    score = Column(Integer, nullable=False)        # 0–5
+    answers = Column(JSON, nullable=False)         # {"1": "a", "2": "c", ...}
+    submitted_at = Column(DateTime(timezone=True), server_default=func.now())
