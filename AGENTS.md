@@ -27,7 +27,7 @@ gcloud run deploy daily-learning \
   --max-instances=3 \
   --execution-environment=gen2 \
   --concurrency=50 \
-  --set-env-vars="GROQ_API_KEY=...,GROQ_MODEL=gpt-oss-120b,SMTP_HOST=...,SMTP_PORT=587,SMTP_USER=...,SMTP_PASSWORD=...,EMAIL_TO=...,VAPID_PRIVATE_KEY=...,VAPID_PUBLIC_KEY=...,ADMIN_KEY=...,APP_URL=https://daily-learning-taxnvq53va-uc.a.run.app,DATABASE_URL=sqlite:////app/data/topics.db" \
+  --set-env-vars="GROQ_API_KEY=...,GROQ_MODEL=gpt-oss-120b,SMTP_HOST=...,SMTP_PORT=587,SMTP_USER=...,SMTP_PASSWORD=...,EMAIL_TO=...,VAPID_PRIVATE_KEY=...,VAPID_PUBLIC_KEY=...,ADMIN_KEY=...,GOOGLE_TTS_API_KEY=...,APP_URL=https://daily-learning-taxnvq53va-uc.a.run.app,DATABASE_URL=sqlite:////app/data/topics.db" \
   --add-volume=name=sqlite-data,type=cloud-storage,bucket=my-stuff-ai-db-data \
   --add-volume-mount=volume=sqlite-data,mount-path=/app/data \
   --quiet

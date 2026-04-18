@@ -7,7 +7,7 @@ from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.database import init_db
-from backend.routers import topics, subscriptions, admin, quiz
+from backend.routers import topics, subscriptions, admin, quiz, tts
 
 logging.basicConfig(
     level=logging.INFO,
@@ -46,6 +46,7 @@ app.include_router(topics.router)
 app.include_router(subscriptions.router)
 app.include_router(admin.router)
 app.include_router(quiz.router)
+app.include_router(tts.router)
 
 
 # Health check
