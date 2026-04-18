@@ -11,14 +11,31 @@ Single-container app: React SPA + FastAPI backend + SQLite. Generates one system
 **GCP project**: `my-stuff-ai`, region `us-central1`
 **Service name**: `daily-learning`
 
-**How to redeploy**: All secrets live in `.env`. Build the substitution string from it and run:
+**How to redeploy**: All secrets live in `.env`. Run `gcloud run deploy` directly — do NOT use `gcloud builds submit`:
 
 ```
-gcloud builds submit --config cloudbuild.yaml --project=my-stuff-ai \
-  --substitutions="_GROQ_API_KEY=...,_GROQ_MODEL=...,_SMTP_HOST=...,_SMTP_PORT=...,_SMTP_USER=...,_SMTP_PASSWORD=...,_EMAIL_TO=...,_VAPID_PRIVATE_KEY=...,_VAPID_PUBLIC_KEY=...,_ADMIN_KEY=..."
+gcloud run deploy daily-learning \
+  --source=. \
+  --region=us-central1 \
+  --project=my-stuff-ai \
+  --platform=managed \
+  --allow-unauthenticated \
+  --port=8080 \
+  --memory=512Mi \
+  --cpu=1 \
+  --min-instances=0 \
+  --max-instances=3 \
+  --execution-environment=gen2 \
+  --concurrency=50 \
+  --set-env-vars="GROQ_API_KEY=...,GROQ_MODEL=gpt-oss-120b,SMTP_HOST=...,SMTP_PORT=587,SMTP_USER=...,SMTP_PASSWORD=...,EMAIL_TO=...,VAPID_PRIVATE_KEY=...,VAPID_PUBLIC_KEY=...,ADMIN_KEY=...,APP_URL=https://daily-learning-taxnvq53va-uc.a.run.app,DATABASE_URL=sqlite:////app/data/topics.db" \
+  --add-volume=name=sqlite-data,type=cloud-storage,bucket=my-stuff-ai-db-data \
+  --add-volume-mount=volume=sqlite-data,mount-path=/app/data \
+  --quiet
 ```
 
-`_GROQ_MODEL` and `_SMTP_PORT` have defaults in `cloudbuild.yaml` and can be omitted if unchanged. No Artifact Registry setup needed — `cloudbuild.yaml` uses `gcloud run deploy --source` which lets Cloud Build handle image storage automatically in a managed `cloud-run-source-deploy` repo.
+**Why not `gcloud builds submit --config cloudbuild.yaml`?** See `cloudbuild.yaml` comment — that approach uses `E2_HIGHCPU_8` (no free tier, $0.016/min) as a wrapper around `gcloud run deploy --source` which itself triggers a second Cloud Build. Running `gcloud run deploy --source` directly skips the expensive outer build and only pays for the inner E2_MEDIUM build (120 free min/day). ~$0.05 saved per deploy.
+
+No Artifact Registry setup needed — `--source=.` lets Cloud Build handle image storage automatically in a managed `cloud-run-source-deploy` repo.
 
 ---
 
