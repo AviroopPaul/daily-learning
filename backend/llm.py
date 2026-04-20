@@ -17,6 +17,131 @@ _runtime_config: dict = {
 
 DIFFICULTY_LEVELS = ["Beginner", "Intermediate", "Advanced"]
 
+# Topic angles ensure variety across software engineering dimensions,
+# not just the "scaling" frame the LLM defaults to.
+TOPIC_ANGLES = [
+    "Scaling & Distributed Systems",
+    "Data Correctness & Consistency",
+    "Security & Authentication",
+    "Developer Experience & API Design",
+    "Observability & Debugging",
+    "Performance & Efficiency",
+    "Reliability & Failure Recovery",
+    "Software Development Practices",
+]
+
+# Keywords used to classify a topic title into one of the angles above.
+_ANGLE_KEYWORDS: dict[str, list[str]] = {
+    "Scaling & Distributed Systems": [
+        "scal", "distributed", "multi-region", "global", "horizontal",
+        "sharding", "partition", "replica", "cluster", "load balanc",
+        "replication", "fan-out", "fanout",
+    ],
+    "Data Correctness & Consistency": [
+        "consistency", "consensus", "exactly-once", "idempotent",
+        "transaction", "acid", "lineariz", "serializab", "correctness",
+        "isolation", "mvcc",
+    ],
+    "Security & Authentication": [
+        "security", "auth", "oauth", "jwt", "encrypt", "tls", "ssl",
+        "zero trust", "rbac", "access control", "secret", "csrf", "xss",
+        "injection", "sandboxing",
+    ],
+    "Developer Experience & API Design": [
+        "api design", "versioning", "sdk", "developer experience",
+        "contract", "openapi", "graphql", "rest", "grpc", "webhook",
+        "backward compat", "deprecat",
+    ],
+    "Observability & Debugging": [
+        "observab", "monitor", "tracing", "logging", "metric",
+        "alert", "debug", "profil", "telemetry", "slo", "sli", "sre",
+        "flame graph", "distributed trace",
+    ],
+    "Performance & Efficiency": [
+        "performance", "latency", "throughput", "cach", "compres",
+        "optim", "efficiency", "cost", "ttl", "index", "query plan",
+        "batch", "prefetch",
+    ],
+    "Reliability & Failure Recovery": [
+        "reliab", "fault", "failover", "disaster", "recovery",
+        "circuit break", "retry", "backoff", "chaos", "resilien",
+        "graceful degradat", "bulkhead",
+    ],
+    "Software Development Practices": [
+        "ci/cd", "deploy", "canary", "feature flag", "migration",
+        "refactor", "test", "build", "release", "gitops", "blue-green",
+        "rollback", "infrastructure as code",
+    ],
+}
+
+# Angle descriptions injected into the prompt so the LLM understands the scope.
+_ANGLE_DESCRIPTIONS: dict[str, str] = {
+    "Scaling & Distributed Systems": (
+        "how systems are designed or evolved to handle growth — sharding, replication, "
+        "consistent hashing, multi-region architectures, etc."
+    ),
+    "Data Correctness & Consistency": (
+        "correctness guarantees in distributed or concurrent systems — ACID transactions, "
+        "consensus, idempotency, exactly-once delivery, MVCC, isolation levels, etc."
+    ),
+    "Security & Authentication": (
+        "securing systems and data — OAuth flows, JWT pitfalls, encryption at rest/in transit, "
+        "zero-trust networking, RBAC, secrets management, etc."
+    ),
+    "Developer Experience & API Design": (
+        "how APIs and tooling are designed for the developers who consume them — versioning "
+        "strategies, backward compatibility, OpenAPI, gRPC vs REST trade-offs, SDK design, etc."
+    ),
+    "Observability & Debugging": (
+        "making systems understandable in production — distributed tracing, structured logging, "
+        "SLOs/SLIs, alerting philosophy, profiling, flame graphs, etc."
+    ),
+    "Performance & Efficiency": (
+        "squeezing more out of existing resources — query optimisation, caching strategies, "
+        "compression, batching, prefetching, index design, cost reduction, etc."
+    ),
+    "Reliability & Failure Recovery": (
+        "designing for inevitable failures — circuit breakers, retries with backoff, chaos "
+        "engineering, graceful degradation, bulkheads, disaster recovery, etc."
+    ),
+    "Software Development Practices": (
+        "engineering processes and deployment practices — CI/CD pipelines, canary/blue-green "
+        "deployments, feature flags, database migrations, infrastructure-as-code, etc."
+    ),
+}
+
+
+def infer_topic_angle(title: str) -> str:
+    """Classify a topic title into one of TOPIC_ANGLES using keyword matching.
+
+    Non-scaling angles are checked first so that a title like 'Exactly-Once Delivery in
+    Distributed Queues' resolves to 'Data Correctness & Consistency' rather than being
+    swallowed by the generic 'distributed' keyword. Scaling is the fallback."""
+    title_lower = title.lower()
+    priority_order = [a for a in TOPIC_ANGLES if a != "Scaling & Distributed Systems"] + ["Scaling & Distributed Systems"]
+    for angle in priority_order:
+        if any(kw in title_lower for kw in _ANGLE_KEYWORDS[angle]):
+            return angle
+    return "Scaling & Distributed Systems"
+
+
+def compute_target_angle(recent_titles: list[str]) -> str:
+    """Pick the angle least represented in recent topics, to counteract scaling bias."""
+    counts = {a: 0 for a in TOPIC_ANGLES}
+    for title in recent_titles:
+        angle = infer_topic_angle(title)
+        counts[angle] += 1
+    # Exclude 'Scaling & Distributed Systems' from being chosen if it's already ≥ 2x
+    # any other angle — hard-cap to prevent runaway dominance.
+    min_non_scaling = min(
+        counts[a] for a in TOPIC_ANGLES if a != "Scaling & Distributed Systems"
+    )
+    scaling_count = counts["Scaling & Distributed Systems"]
+    candidates = TOPIC_ANGLES if scaling_count <= min_non_scaling else [
+        a for a in TOPIC_ANGLES if a != "Scaling & Distributed Systems"
+    ]
+    return min(candidates, key=lambda a: counts[a])
+
 
 def get_llm_config() -> dict:
     return {
@@ -100,23 +225,35 @@ TOPIC_SCHEMA = {
     "additionalProperties": False
 }
 
-SYSTEM_PROMPT = """You are an expert software architect and system design educator.
-Your role is to create high-quality, educational content about real-world system design challenges.
-You write in a clear, technical, yet accessible style — similar to top engineering blogs."""
+SYSTEM_PROMPT = """You are an expert software engineer and educator covering the full breadth of software development — \
+system design, backend engineering, infrastructure, security, developer tooling, and engineering practices.
+Your role is to create high-quality, practical educational content that working engineers find immediately useful.
+You write in a clear, technical, yet accessible style — similar to top engineering blogs like the Netflix Tech Blog, \
+AWS Architecture Blog, or Martin Fowler's bliki."""
 
-TOPIC_PROMPT_TEMPLATE = """Generate a comprehensive system design educational topic for today ({date}).
+TOPIC_PROMPT_TEMPLATE = """Generate a comprehensive software engineering educational topic for today ({date}).
 
 Previously covered topics (DO NOT repeat these):
 {previous_topics}
 
-Preferred subject areas (pick one that hasn't been covered recently):
+Preferred subject area (choose from these, picking one not recently covered):
 {subject_areas}
 
 Target difficulty: {target_difficulty}
-The topic MUST be set at the {target_difficulty} level. Calibrate depth, jargon, and assumed prior knowledge accordingly.
+The topic MUST be calibrated to the {target_difficulty} level — adjust depth, jargon, and assumed prior knowledge accordingly.
 
-Focus on real challenges that companies like Netflix, Google, OpenAI, Anthropic, Meta, Uber, and Airbnb have faced and solved.
-Choose a unique topic not in the list above. Be specific and insightful — avoid generic overviews."""
+Today's angle: {target_angle}
+Frame the topic through this lens: {angle_description}
+
+IMPORTANT — diversity rules:
+- Do NOT default to the "how do we scale this to millions of users" framing unless that is the stated angle.
+- Scaling & distributed systems is just one of many valuable engineering topics. Security, correctness, \
+developer experience, observability, and good engineering practices are equally important.
+- Pick something a mid-to-senior engineer would find surprising, nuanced, or immediately applicable.
+- Avoid generic interview-prep overviews. Be specific about the real trade-offs and failure modes.
+
+Real-world grounding: Where relevant, reference how companies like Netflix, Google, Anthropic, Meta, \
+Stripe, Cloudflare, or Shopify have approached this — but only when it illuminates the topic, not as a name-drop."""
 
 
 def generate_tldr(title: str, problem_statement: str, solution_approaches: str, model: str = None) -> str:
@@ -150,7 +287,7 @@ def generate_tldr(title: str, problem_statement: str, solution_approaches: str, 
     return response.choices[0].message.content.strip()
 
 
-def generate_topic(date: str, previous_topics: list[str], model: str = None, subject_areas: list[str] = None, target_difficulty: str = None) -> dict:
+def generate_topic(date: str, previous_topics: list[str], model: str = None, subject_areas: list[str] = None, target_difficulty: str = None, target_angle: str = None) -> dict:
     api_key = os.getenv("GROQ_API_KEY")
     if not api_key:
         raise ValueError("GROQ_API_KEY environment variable not set")
@@ -162,12 +299,16 @@ def generate_topic(date: str, previous_topics: list[str], model: str = None, sub
     previous_str = "\n".join(f"- {t}" for t in previous_topics) if previous_topics else "None yet — this is the first topic!"
     subject_str = "\n".join(f"- {s}" for s in subject_areas) if subject_areas else "- All topics welcome"
     effective_difficulty = target_difficulty or "Intermediate"
+    effective_angle = target_angle or TOPIC_ANGLES[0]
+    angle_description = _ANGLE_DESCRIPTIONS.get(effective_angle, "")
 
     prompt = cfg["topic_prompt_template"].format(
         date=date,
         previous_topics=previous_str,
         subject_areas=subject_str,
         target_difficulty=effective_difficulty,
+        target_angle=effective_angle,
+        angle_description=angle_description,
     )
 
     # Build schema with domain enum from current subject areas
