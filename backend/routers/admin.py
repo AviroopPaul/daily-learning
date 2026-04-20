@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from backend.database import get_db
 from backend.models import Topic, PushSubscription, SubjectArea, Quiz, QuizQuestion
 from backend.schemas import GenerateResponse, TopicListItem
-from backend.llm import generate_topic, generate_tldr, generate_quiz, get_llm_config, update_llm_config, compute_target_difficulty, DIFFICULTY_LEVELS
+from backend.llm import generate_topic, generate_tldr, generate_quiz, get_llm_config, update_llm_config, compute_target_difficulty, compute_target_angle, DIFFICULTY_LEVELS
 from backend.email_service import send_topic_email
 from backend.push_service import send_push_notification
 import os
@@ -71,7 +71,11 @@ async def run_daily_generation(model: str = None) -> dict:
             recent_difficulties = [t.difficulty for t in all_topics[:9]]
             target_difficulty = compute_target_difficulty(recent_difficulties)
 
-        topic_data = generate_topic(today, previous_titles, model=model, subject_areas=subject_areas, target_difficulty=target_difficulty)
+        recent_titles = [t.title for t in all_topics[:14]]
+        target_angle = compute_target_angle(recent_titles)
+        logger.info(f"Target angle for {today}: {target_angle}")
+
+        topic_data = generate_topic(today, previous_titles, model=model, subject_areas=subject_areas, target_difficulty=target_difficulty, target_angle=target_angle)
 
         new_topic = Topic(
             date=today,
