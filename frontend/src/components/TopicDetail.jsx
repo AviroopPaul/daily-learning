@@ -1,7 +1,25 @@
 import { useState, useEffect, useRef } from 'react'
 import { FiCalendar, FiAward, FiPlay, FiPause, FiSquare, FiVolume2, FiLoader } from 'react-icons/fi'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { usePush } from '../hooks/usePush.js'
 import QuizPanel from './QuizPanel.jsx'
+
+function Markdown({ children, className }) {
+  if (!children) return null
+  return (
+    <div className={className}>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{
+          a: ({ node, ...props }) => <a target="_blank" rel="noopener noreferrer" {...props} />,
+        }}
+      >
+        {children}
+      </ReactMarkdown>
+    </div>
+  )
+}
 
 const MODEL_NAME = 'gpt-oss-120b'
 
@@ -285,36 +303,36 @@ export default function TopicDetail({ topicId }) {
       {topic.tldr && (
         <div className="tldr-box">
           <div className="tldr-label">TL;DR</div>
-          <p className="tldr-text">{topic.tldr}</p>
+          <Markdown className="tldr-text markdown">{topic.tldr}</Markdown>
         </div>
       )}
 
       <Section label="The Problem">
         <div className="problem-box">
-          <p>{topic.problem_statement}</p>
+          <Markdown className="markdown">{topic.problem_statement}</Markdown>
         </div>
       </Section>
 
       <Section label="Context">
-        <p className="prose">{topic.context_text}</p>
+        <Markdown className="prose markdown">{topic.context_text}</Markdown>
       </Section>
 
       <Section label="Deep Dive">
-        <p className="prose">{topic.deep_dive}</p>
+        <Markdown className="prose markdown">{topic.deep_dive}</Markdown>
       </Section>
 
       <Section label="Real-World Examples">
-        <p className="prose">{topic.real_world_examples}</p>
+        <Markdown className="prose markdown">{topic.real_world_examples}</Markdown>
       </Section>
 
       <Section label="Solution Approaches">
-        <p className="prose">{topic.solution_approaches}</p>
+        <Markdown className="prose markdown">{topic.solution_approaches}</Markdown>
       </Section>
 
       <Section label="Key Takeaways">
         <ul className="takeaways-list">
           {(topic.key_takeaways || []).map((t, i) => (
-            <li key={i}>{t}</li>
+            <li key={i}><Markdown className="markdown markdown--inline">{t}</Markdown></li>
           ))}
         </ul>
       </Section>
@@ -323,7 +341,7 @@ export default function TopicDetail({ topicId }) {
         <Section label="Further Reading">
           <ul className="reading-list">
             {topic.further_reading.map((t, i) => (
-              <li key={i}>{t}</li>
+              <li key={i}><Markdown className="markdown markdown--inline">{t}</Markdown></li>
             ))}
           </ul>
         </Section>
