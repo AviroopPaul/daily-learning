@@ -66,11 +66,15 @@ def init_db():
 
     # Add new columns that didn't exist in older schema versions
     with engine.connect() as conn:
-        try:
-            conn.execute(text("ALTER TABLE topics ADD COLUMN tldr TEXT"))
-            conn.commit()
-        except Exception:
-            pass  # column already exists
+        for ddl in (
+            "ALTER TABLE topics ADD COLUMN tldr TEXT",
+            "ALTER TABLE topics ADD COLUMN mermaid_diagram TEXT",
+        ):
+            try:
+                conn.execute(text(ddl))
+                conn.commit()
+            except Exception:
+                pass  # column already exists
 
     # Seed default subject areas on first run
     db = SessionLocal()

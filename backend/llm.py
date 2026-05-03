@@ -206,6 +206,20 @@ TOPIC_SCHEMA = {
             "type": "string",
             "description": "2-3 approaches with trade-offs. Format: Approach name: description. Pros: ... Cons: ..."
         },
+        "mermaid_diagram": {
+            "type": "string",
+            "description": (
+                "A valid Mermaid.js diagram that visually illustrates the topic's architecture, "
+                "data flow, or sequence of interactions. Pick the most appropriate diagram type: "
+                "flowchart (LR or TD) for architectures, sequenceDiagram for request/response flows, "
+                "stateDiagram-v2 for state machines, erDiagram for data models. "
+                "Output ONLY raw Mermaid syntax — no markdown fences (```), no commentary. "
+                "Start with the diagram type keyword on the first line. "
+                "Keep it focused: 6-14 nodes, clear labels, no special characters that break Mermaid parsing "
+                "(avoid parentheses, quotes, and colons inside node labels). "
+                "Example: 'flowchart LR\\n  Client[Client] --> LB[Load Balancer]\\n  LB --> S1[Server 1]\\n  LB --> S2[Server 2]\\n  S1 --> DB[(Database)]\\n  S2 --> DB'"
+            )
+        },
         "key_takeaways": {
             "type": "array",
             "items": {"type": "string"},
@@ -219,7 +233,7 @@ TOPIC_SCHEMA = {
     },
     "required": [
         "title", "tldr", "domain", "difficulty", "problem_statement", "context_text",
-        "deep_dive", "real_world_examples", "solution_approaches",
+        "deep_dive", "real_world_examples", "solution_approaches", "mermaid_diagram",
         "key_takeaways", "further_reading"
     ],
     "additionalProperties": False

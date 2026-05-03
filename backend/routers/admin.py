@@ -88,6 +88,7 @@ async def run_daily_generation(model: str = None) -> dict:
             deep_dive=topic_data["deep_dive"],
             real_world_examples=topic_data["real_world_examples"],
             solution_approaches=topic_data["solution_approaches"],
+            mermaid_diagram=topic_data.get("mermaid_diagram"),
             key_takeaways=topic_data["key_takeaways"],
             further_reading=topic_data["further_reading"],
         )

@@ -4,6 +4,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { usePush } from '../hooks/usePush.js'
 import QuizPanel from './QuizPanel.jsx'
+import MermaidDiagram from './MermaidDiagram.jsx'
 
 function Markdown({ children, className }) {
   if (!children) return null
@@ -305,6 +306,12 @@ export default function TopicDetail({ topicId }) {
           <div className="tldr-label">TL;DR</div>
           <Markdown className="tldr-text markdown">{topic.tldr}</Markdown>
         </div>
+      )}
+
+      {topic.mermaid_diagram && (
+        <Section label="Diagram">
+          <MermaidDiagram code={topic.mermaid_diagram} />
+        </Section>
       )}
 
       <Section label="The Problem">

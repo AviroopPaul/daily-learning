@@ -14,6 +14,7 @@ class TopicBase(BaseModel):
     deep_dive: str
     real_world_examples: str
     solution_approaches: str
+    mermaid_diagram: Optional[str] = None
     key_takeaways: list[str]
     further_reading: list[str]
 

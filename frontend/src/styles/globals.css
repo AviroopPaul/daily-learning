@@ -724,6 +724,46 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 .markdown--inline > p { margin: 0 0 0.3em; }
 .markdown--inline > p:last-child { margin-bottom: 0; }
 
+/* ─── Mermaid diagram ─── */
+.mermaid-wrap {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 14px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow-x: auto;
+}
+.mermaid-wrap svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.mermaid-error {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid #d97757;
+  border-radius: var(--radius);
+  padding: 12px 14px;
+}
+.mermaid-error-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #d97757;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.mermaid-source {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  white-space: pre-wrap;
+  margin: 0;
+  overflow-x: auto;
+}
+
 /* ─── Takeaways ─── */
 .takeaways-list {
   list-style: none;

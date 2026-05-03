@@ -17,6 +17,7 @@ class Topic(Base):
     deep_dive = Column(Text, nullable=False)
     real_world_examples = Column(Text, nullable=False)
     solution_approaches = Column(Text, nullable=False)
+    mermaid_diagram = Column(Text, nullable=True)
     key_takeaways = Column(JSON, nullable=False, default=list)
     further_reading = Column(JSON, nullable=False, default=list)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
